@@ -7,6 +7,6 @@ import org.springframework.stereotype.Component;
 public class UpiPaymentStrategy implements PaymentStrategy {
     public boolean pay(PaymentRequest request) {
         // simulate success
-        return false;
+        return true;
     }
 }
