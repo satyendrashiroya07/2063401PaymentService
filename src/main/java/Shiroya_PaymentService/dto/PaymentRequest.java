@@ -11,4 +11,5 @@ public class PaymentRequest {
     private String email;
     private int quantity;
     private String paymentType;
+    private String traceId;
 }
