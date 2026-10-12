@@ -24,6 +24,11 @@ public class PaymentEntity {
     @Column(unique = true, nullable = false, updatable = false)
     private String transactionId;
 
+    @Column(unique = true)
+    private String razorpayOrderId;
+
+    private String razorpayPaymentId;
+
     @PrePersist
     public void generateTransactionId() {
         if (this.transactionId == null) {

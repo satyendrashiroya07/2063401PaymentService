@@ -6,11 +6,14 @@ import Shiroya_PaymentService.entity.PaymentEntity;
 import Shiroya_PaymentService.repo.OutBoxEventPaymentRepo;
 import Shiroya_PaymentService.repo.PaymentRepo;
 import Shiroya_PaymentService.strategyPattern.PaymentFactory;
+import Shiroya_PaymentService.strategyPattern.PaymentGatewayStrategy;
 import Shiroya_PaymentService.strategyPattern.PaymentStrategy;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.razorpay.RazorpayException;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -41,7 +44,7 @@ public class PaymentService {
     private OutBoxEventPaymentRepo outBoxEventPaymentRepo;
 
     @Transactional
-    public String processPayment(PaymentRequest request) {
+    public String processPayment(PaymentRequest request) throws RazorpayException {
 
         PaymentEntity payment = new PaymentEntity();
         payment.setOrderId(request.getOrderId());
@@ -53,11 +56,11 @@ public class PaymentService {
 
         repo.save(payment);
 
-        PaymentStrategy strategy = factory.getStrategy(request.getPaymentType());
+        PaymentGatewayStrategy strategy = factory.getGatewayStrategy(request.getPaymentType());
 
-        boolean success = strategy.pay(request);
+        JSONObject success = strategy.createPayment(request);
 
-        if (success) {
+        if (!success.isEmpty()) {
             PaymentEvent event = PaymentEvent.builder().
                     orderId(request.getOrderId()).
                     productId(request.getProductId()).
@@ -65,6 +68,7 @@ public class PaymentService {
                     userId(request.getUserId()).
                     quantity(request.getQuantity()).
                     status("SUCCESS").build();
+            payment.setRazorpayOrderId((success.toMap().get("razorpayOrderId")).toString());
             payment.setStatus("SUCCESS");
 
             OutBoxEventPayment kafkaDbEvent = new OutBoxEventPayment();
