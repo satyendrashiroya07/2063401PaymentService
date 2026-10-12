@@ -2,6 +2,7 @@ package Shiroya_PaymentService.consumer;
 
 import Shiroya_PaymentService.dto.PaymentRequest;
 import Shiroya_PaymentService.paymentService.PaymentService;
+import com.razorpay.RazorpayException;
 import io.micrometer.tracing.Span;
 import io.micrometer.tracing.Tracer;
 import lombok.extern.slf4j.Slf4j;
@@ -45,8 +46,9 @@ public class OrderEventListener {
             log.info("Received traceId: {}", traceId);
 
             paymentService.processPayment(request);
-        }
-        finally {
+        } catch (RazorpayException e) {
+            throw new RuntimeException(e);
+        } finally {
             newSpan.end();
         }
     }
